@@ -855,3 +855,375 @@ export function middleware(request: NextRequest) {
 - **API routes** can handle backend logic without needing a separate server.  
 - **Client-side navigation** (`next/link`) ensures fast performance.  
 
+# 🚀 **Catch-All Segments in Next.js 15 (App Router)**
+Catch-all segments in Next.js 15 allow us to **capture multiple URL segments** in a **single dynamic route**. This is useful for handling flexible or deeply nested paths without defining each one manually.
+
+---
+
+## 🔥 **1. Syntax: Using `[...]` for Catch-All Segments**
+To create a catch-all route, we wrap a folder name inside **square brackets with three dots** (`[...]`).
+
+📌 **Example: Catch-All Route (`/docs/*`)**
+```
+app/
+├── docs/
+│   ├── [...slug]/
+│   │   ├── page.tsx
+```
+📌 **app/docs/[...slug]/page.tsx**
+```tsx
+export default function DocsPage({ params }: { params: { slug?: string[] } }) {
+  return <h1>Docs Path: {params.slug ? params.slug.join("/") : "Home"}</h1>;
+}
+```
+
+✅ **Routes and Their Outputs**  
+| URL | `params.slug` | Output |
+|-----|-------------|--------|
+| `/docs` | `undefined` | Docs Path: Home |
+| `/docs/nextjs` | `["nextjs"]` | Docs Path: nextjs |
+| `/docs/nextjs/15` | `["nextjs", "15"]` | Docs Path: nextjs/15 |
+| `/docs/nextjs/15/features` | `["nextjs", "15", "features"]` | Docs Path: nextjs/15/features |
+
+🔹 **`params.slug` will always be an array of strings**, representing the URL segments.
+
+---
+
+## 🔥 **2. Optional Catch-All Segments (`[[...slug]]`)**
+If we want the route to **match even when no segments are provided**, we use **double square brackets** (`[[...slug]]`).
+
+📌 **Example: Handling `/docs` as well**
+```
+app/
+├── docs/
+│   ├── [[...slug]]/
+│   │   ├── page.tsx
+```
+📌 **app/docs/[[...slug]]/page.tsx**
+```tsx
+export default function DocsPage({ params }: { params: { slug?: string[] } }) {
+  return <h1>Docs: {params.slug ? params.slug.join("/") : "Home"}</h1>;
+}
+```
+
+✅ **Difference Between `[...]` and `[[...]]`**
+| URL | `[...]` (Required) | `[[...]]` (Optional) |
+|-----|--------------------|----------------------|
+| `/docs` | ❌ **404 Error** | ✅ "Docs: Home" |
+| `/docs/nextjs` | ✅ "Docs: nextjs" | ✅ "Docs: nextjs" |
+
+🔹 Use `[[...slug]]` when the route should work **without extra segments**.
+
+---
+
+## 🔥 **3. Real-World Example: Breadcrumb Navigation**
+We can use catch-all segments to generate **breadcrumbs** dynamically.
+
+📌 **Example: Breadcrumb Component**
+```tsx
+export default function Breadcrumbs({ params }: { params: { slug?: string[] } }) {
+  const path = params.slug || [];
+
+  return (
+    <nav>
+      <ul>
+        <li><a href="/">Home</a></li>
+        {path.map((segment, index) => {
+          const href = "/" + path.slice(0, index + 1).join("/");
+          return <li key={href}><a href={href}>{segment}</a></li>;
+        })}
+      </ul>
+    </nav>
+  );
+}
+```
+
+✅ **Visiting `/docs/nextjs/15` shows:**
+```
+Home > docs > nextjs > 15
+```
+
+---
+
+## 🎯 **Summary**
+| Feature | `[...]` (Required) | `[[...]]` (Optional) |
+|---------|--------------------|----------------------|
+| Captures multiple segments | ✅ Yes | ✅ Yes |
+| Works without segments (`/docs`) | ❌ No (404) | ✅ Yes |
+| Returns `params.slug` as an array | ✅ Yes | ✅ Yes |
+
+📌 **Use cases:**
+- **Dynamic documentation pages (`/docs/[...slug]`)**
+- **E-commerce categories (`/products/[...category]`)**
+- **Breadcrumb navigation**
+- **URL rewriting and redirection handling**
+
+# 🚀 **Different Ways to Implement a `notFound` Error Page in Next.js 15**  
+In Next.js 15 (App Router), we can implement custom **404 Not Found** error pages in different ways, depending on the context. Let's go through each approach in detail.  
+
+---
+
+## 🔥 **1. Global `not-found.tsx` for a Custom 404 Page**  
+If a user visits a non-existing route, we can create a global `not-found.tsx` inside the `app` directory.  
+
+📌 **Example: `app/not-found.tsx`**  
+```tsx
+export default function NotFound() {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
+      <p className="text-lg mt-4">Sorry, we couldn’t find the page you’re looking for.</p>
+      <a href="/" className="mt-6 px-4 py-2 bg-blue-600 text-white rounded">Go Home</a>
+    </div>
+  );
+}
+```
+✅ **When is this triggered?**  
+- If the user visits a route that **does not exist** (`/random-page` → 404).  
+- **Works automatically** when a page is not found.  
+
+---
+
+## 🔥 **2. Programmatically Triggering a 404 Error Inside a Page**  
+We can use Next.js’s built-in `notFound()` function inside a route to **conditionally trigger a 404 page**.
+
+📌 **Example: `app/products/[id]/page.tsx`**
+```tsx
+import { notFound } from "next/navigation";
+
+export default function ProductPage({ params }: { params: { id: string } }) {
+  const validProducts = ["101", "102", "103"]; // Fake product list
+  if (!validProducts.includes(params.id)) {
+    notFound(); // Triggers the 404 page
+  }
+
+  return <h1>Product ID: {params.id}</h1>;
+}
+```
+✅ **When is this triggered?**  
+- If the user visits `/products/999` (an invalid product), it will **redirect them to the 404 page**.
+
+---
+
+## 🔥 **3. Handling 404 Errors in Fetch Requests (Server Components Only)**  
+If we are fetching data from an API, we can **return `notFound()` when no data exists**.
+
+📌 **Example: Fetching user data from an API**
+```tsx
+import { notFound } from "next/navigation";
+
+async function getUser(id: string) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
+  if (!res.ok) {
+    notFound(); // Redirects to the 404 page if user is not found
+  }
+  return res.json();
+}
+
+export default async function UserPage({ params }: { params: { id: string } }) {
+  const user = await getUser(params.id);
+  return <h1>User: {user.name}</h1>;
+}
+```
+✅ **When is this triggered?**  
+- If we visit `/users/999` and the API **returns a 404**, it will automatically show our **custom 404 page**.
+
+---
+
+## 🔥 **4. Custom 404 Handling in Layouts (Not Recommended)**  
+We can also **handle 404 pages inside layouts** by checking the route params, but this is **not recommended** because it might cause unwanted redirects.
+
+📌 **Example: `app/products/layout.tsx`**
+```tsx
+import { notFound } from "next/navigation";
+
+export default function ProductLayout({ children, params }: { children: React.ReactNode, params: { id: string } }) {
+  const validProducts = ["101", "102", "103"];
+  if (!validProducts.includes(params.id)) {
+    notFound();
+  }
+
+  return <>{children}</>;
+}
+```
+✅ **When is this triggered?**  
+- If a product is invalid, it **redirects all subpages (`/products/999`) to 404**.
+
+---
+
+## 🎯 **Summary Table**
+| Method | Use Case | Example |
+|--------|---------|---------|
+| **Global `not-found.tsx`** | Shows a global 404 page for non-existing routes | `app/not-found.tsx` |
+| **`notFound()` inside a page** | Conditionally show 404 when data is missing | `app/products/[id]/page.tsx` |
+| **API-based 404 Handling** | If an API request fails, trigger `notFound()` | Fetching user/product data |
+| **404 in Layouts (Not Recommended)** | Handling 404 inside layouts for groups of pages | `app/products/layout.tsx` |
+
+---
+
+### 🚀 **Which One Should You Use?**
+✅ **Use `not-found.tsx`** → For a **global 404 page**.  
+✅ **Use `notFound()` in pages** → When handling **dynamic routes or data fetching errors**.  
+✅ **Use API-based 404 Handling** → When fetching **external data** and the resource is missing.  
+
+# 🔥 **`usePathname` Hook in Next.js 15**  
+
+### 📌 **What is `usePathname`?**  
+`usePathname` is a **React Server Component (RSC) hook** in Next.js 15 that lets us access the **current URL path** in a client component. It’s useful when we need to:  
+✅ Show active navigation styles  
+✅ Conditionally render UI based on the route  
+✅ Generate breadcrumbs  
+✅ Perform analytics or logging  
+
+📌 **Importing `usePathname`**
+```tsx
+import { usePathname } from "next/navigation";
+```
+
+---
+
+## 🚀 **1. Basic Usage: Display Current Path**  
+We can use `usePathname` to **get the current URL path** and display it in our component.
+
+📌 **Example: `components/CurrentPath.tsx`**
+```tsx
+"use client"; // Required for usePathname
+
+import { usePathname } from "next/navigation";
+
+export default function CurrentPath() {
+  const pathname = usePathname();
+
+  return (
+    <div>
+      <h1>Current Path: {pathname}</h1>
+    </div>
+  );
+}
+```
+✅ **Visiting `/about` will display:**  
+```
+Current Path: /about
+```
+
+---
+
+## 🚀 **2. Highlight Active Navigation Link**  
+We can use `usePathname` to apply **active styles** to the current page link.
+
+📌 **Example: `components/Navbar.tsx`**
+```tsx
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+export default function Navbar() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="flex space-x-4">
+      {["/", "/about", "/contact"].map((path) => (
+        <Link
+          key={path}
+          href={path}
+          className={`px-4 py-2 ${
+            pathname === path ? "bg-blue-500 text-white" : "text-gray-700"
+          }`}
+        >
+          {path === "/" ? "Home" : path.replace("/", "").toUpperCase()}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+```
+✅ **If we visit `/about`, the About link is highlighted.**  
+```
+[ Home ]  [ ABOUT ]  [ Contact ]
+```
+🔹 **Only the active link gets the blue background.**
+
+---
+
+## 🚀 **3. Breadcrumb Navigation Using `usePathname`**
+We can use `usePathname` to generate **breadcrumb links** dynamically.
+
+📌 **Example: `components/Breadcrumbs.tsx`**
+```tsx
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+export default function Breadcrumbs() {
+  const pathname = usePathname();
+  const pathSegments = pathname.split("/").filter(Boolean);
+
+  return (
+    <nav className="mt-4">
+      <ul className="flex space-x-2">
+        <li><Link href="/">Home</Link></li>
+        {pathSegments.map((segment, index) => {
+          const href = "/" + pathSegments.slice(0, index + 1).join("/");
+          return (
+            <li key={href}>
+              / <Link href={href} className="text-blue-500">{segment}</Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+```
+✅ **Visiting `/docs/nextjs/hooks` generates:**  
+```
+Home / docs / nextjs / hooks
+```
+
+---
+
+## 🚀 **4. Redirect Users Based on Pathname**  
+We can use `usePathname` with `useEffect` to **redirect users** under certain conditions.
+
+📌 **Example: Redirect to login if not authenticated**
+```tsx
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function AuthRedirect() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isAuthenticated = false; // Assume user is not logged in
+
+  useEffect(() => {
+    if (!isAuthenticated && pathname !== "/login") {
+      router.push("/login");
+    }
+  }, [pathname]);
+
+  return null;
+}
+```
+✅ **If the user is not logged in and tries to visit `/dashboard`, they will be redirected to `/login`.**
+
+---
+
+## 🎯 **Summary Table**
+| Feature | Use Case | Example |
+|---------|---------|---------|
+| **Get Current Path** | Show path in UI | `usePathname()` |
+| **Highlight Active Link** | Change nav styles | Navbar component |
+| **Breadcrumbs** | Generate links from URL | `/docs/nextjs/hooks → docs > nextjs > hooks` |
+| **Redirect Users** | Protect routes | Redirect to `/login` if not authenticated |
+
+---
+
+## 🚀 **Final Thoughts**
+- ✅ **Use `usePathname` in client components** (`"use client"` is required).  
+- ✅ **It works well for UI-based logic** (menus, breadcrumbs, redirects).  
+- ❌ **Don’t use it inside Server Components**, since it only works in client-side rendering.
