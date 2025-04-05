@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import React from "react";
 
 export const metadata: Metadata = {
@@ -8,7 +9,12 @@ export const metadata: Metadata = {
 };
 
 function page() {
-  return <h1>Blog Page</h1>;
+  return (
+    <>
+      <h1>Blog Page</h1>
+      <Link href="/">Back Home 🏠</Link>
+    </>
+  );
 }
 
 export default page;

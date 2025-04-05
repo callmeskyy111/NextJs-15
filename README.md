@@ -1978,6 +1978,178 @@ export const metadata = {
   },
 };
 ```
-
 ---
 We can scale this template into anything we need! 🚀
+
+Absolutely Skyy! Let’s dive into the **`Link` component in Next.js 15** — a core feature for client-side navigation in your app. It’s lightweight, fast, and integrated with the new **App Router** system.
+
+---
+
+## 🔗 What is the `Link` Component?
+
+In Next.js 15, the `Link` component (from `next/link`) is used for **navigating between routes**. It enables **client-side navigation**, meaning that clicking a link doesn’t cause a full page reload — just the necessary route is loaded using JavaScript. This leads to **faster page transitions** and **preserves state** like scroll position (if configured).
+
+---
+
+## 📦 Where is it imported from?
+
+```tsx
+import Link from 'next/link';
+```
+
+---
+
+## 🧱 Basic Usage
+
+```tsx
+<Link href="/about">About Us</Link>
+```
+
+This will render:
+```html
+<a href="/about">About Us</a>
+```
+
+✅ React handles routing without reloading the browser.
+
+---
+
+## 🧠 Under the Hood
+
+The `Link` component:
+- Uses the HTML `<a>` tag under the hood.
+- Intercepts clicks and loads pages **via client-side navigation**.
+- Automatically **prefetches** the linked page in the background (when visible in viewport).
+- Is compatible with **dynamic routes**, **Route Groups**, **Catch-all routes**, and **Layouts** in the App Router.
+
+---
+
+## 💡 Features of `Link`
+
+| Feature            | Description |
+|-------------------|-------------|
+| `href`            | Required. Route path or URL to navigate to. |
+| `prefetch`        | Prefetch the linked page in the background. Enabled by default in production. |
+| `replace`         | Replaces history instead of pushing (like `router.replace()`) |
+| `scroll`          | Scroll to top on navigation (default: `true`) |
+| `as`              | Optional. Used in dynamic routes to mask the URL |
+| **Nested elements** | Now allowed! You can wrap complex JSX inside `Link` |
+
+---
+
+## 🧩 Example: Wrapping Elements
+
+You can now do this (allowed in App Router):
+
+```tsx
+<Link href="/products/shoes">
+  <div className="p-4 rounded hover:bg-gray-100">
+    <h2>Shoes</h2>
+    <p>See our latest shoes collection.</p>
+  </div>
+</Link>
+```
+
+✅ This was not possible in earlier versions unless you manually wrapped it with `<a>`.
+
+---
+
+## 🚀 Dynamic Routes with `Link`
+
+For a dynamic route like `/blog/[slug]`:
+
+```tsx
+<Link href={`/blog/${post.slug}`}>{post.title}</Link>
+```
+
+You can also pass an object:
+
+```tsx
+<Link href={{ pathname: '/blog/[slug]', query: { slug: post.slug } }}>
+  {post.title}
+</Link>
+```
+
+---
+
+## ⚙️ `replace` vs `push`
+
+By default, navigation pushes to browser history. If you want to **replace** the current route:
+
+```tsx
+<Link href="/dashboard" replace>Go to Dashboard</Link>
+```
+
+---
+
+## ⏳ Disable Prefetching (Optional)
+
+By default, prefetching is **enabled in production**. You can disable it:
+
+```tsx
+<Link href="/contact" prefetch={false}>Contact</Link>
+```
+
+✅ This saves bandwidth if the route is unlikely to be visited.
+
+---
+
+## 🔁 Scroll Behavior
+
+If you don’t want to scroll to top on navigation:
+
+```tsx
+<Link href="/faq" scroll={false}>FAQ</Link>
+```
+
+---
+
+## 🌐 External Links
+
+Use plain `<a>` tags for **external links**:
+
+```tsx
+<a href="https://github.com/skyybbanerjee" target="_blank" rel="noopener noreferrer">
+  GitHub
+</a>
+```
+
+🔒 Always use `rel="noopener noreferrer"` for security with `target="_blank"`.
+
+---
+
+## 🔍 Link with Active Styling (Custom Highlighting)
+
+You can highlight the current link manually using `usePathname()`:
+
+```tsx
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+export default function NavLink({ href, children }: { href: string, children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
+  return (
+    <Link href={href} className={isActive ? "text-blue-600 font-bold" : "text-gray-700"}>
+      {children}
+    </Link>
+  );
+}
+```
+
+---
+
+## 🧠 Summary
+
+| Prop         | Description |
+|--------------|-------------|
+| `href`       | Path to navigate to |
+| `replace`    | Replaces the current history entry |
+| `prefetch`   | Enables/disables preloading the route |
+| `scroll`     | Controls scroll-to-top behavior |
+| `as`         | Used for masking dynamic URLs |
+| `children`   | Can be text, JSX, or elements (like cards) |
+
+---
